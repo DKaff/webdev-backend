@@ -1,6 +1,7 @@
+require('dotenv').config(); // Load .env variables
 const express = require('express');
 const cors = require('cors');
-const nodemailer = require('nodemailer'); // optional, for sending emails
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -15,36 +16,35 @@ app.post('/api/contact', async (req, res) => {
     return res.status(400).json({ error: 'Please fill all fields' });
   }
 
-  console.log('Received contact form:', { name, email, message });
-
-  // Optionally send an email here using nodemailer
-  // await sendEmail(name, email, message);
-
-  res.json({ message: 'Message received, thank you!' });
+  try {
+    await sendEmail(name, email, message);
+    res.json({ message: 'Message received, thank you!' });
+  } catch (error) {
+    console.error('Email send error:', error);
+    res.status(500).json({ error: 'Failed to send email. Try again later.' });
+  }
 });
 
-/*
-// Optional: Setup nodemailer (e.g., with Gmail SMTP)
+// Sends the email using Gmail and App Password
 async function sendEmail(name, email, message) {
-  let transporter = nodemailer.createTransport({
+  const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'yourgmail@gmail.com',
-      pass: 'your_gmail_app_password', // use app password, NOT your Gmail password
+      user: process.env.EMAIL_USER, // e.g., yourgmail@gmail.com
+      pass: process.env.EMAIL_PASS, // App Password from Google
     },
   });
 
-  let mailOptions = {
-    from: email,
-    to: 'yourgmail@gmail.com',
-    subject: `New Contact from ${name}`,
-    text: message,
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: process.env.EMAIL_USER, // Send to yourself
+    subject: `New Contact Form from ${name}`,
+    text: `Name: ${name}\nEmail: ${email}\n\n${message}`,
   };
 
   await transporter.sendMail(mailOptions);
 }
-*/
 
 app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
